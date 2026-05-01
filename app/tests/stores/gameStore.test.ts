@@ -37,9 +37,9 @@ describe('gameStore', () => {
     expect(caseFile?.id).toBe('mcdc-tutorial-01')
   })
 
-  test('addPair submission a ekler', () => {
+  test('addSubmissionPair submission a ekler', () => {
     useGameStore.getState().loadCase(tutorialCase)
-    useGameStore.getState().addPair({ row1: 1, row2: 3 })
+    useGameStore.getState().addSubmissionPair({ row1: 1, row2: 3 })
     const { submission } = useGameStore.getState()
     expect(submission).toHaveLength(1)
     expect(submission[0]).toEqual({ row1: 1, row2: 3 })
@@ -47,8 +47,8 @@ describe('gameStore', () => {
 
   test('removePair submission dan çıkarır (sıra fark etmez)', () => {
     useGameStore.getState().loadCase(tutorialCase)
-    useGameStore.getState().addPair({ row1: 1, row2: 3 })
-    useGameStore.getState().addPair({ row1: 2, row2: 3 })
+    useGameStore.getState().addSubmissionPair({ row1: 1, row2: 3 })
+    useGameStore.getState().addSubmissionPair({ row1: 2, row2: 3 })
     useGameStore.getState().removePair(3, 1)
     const { submission } = useGameStore.getState()
     expect(submission).toHaveLength(1)
@@ -57,8 +57,8 @@ describe('gameStore', () => {
 
   test('submitForVerdict verdict yazar ve phase trial a geçer', () => {
     useGameStore.getState().loadCase(tutorialCase)
-    useGameStore.getState().addPair({ row1: 1, row2: 3 })
-    useGameStore.getState().addPair({ row1: 2, row2: 3 })
+    useGameStore.getState().addSubmissionPair({ row1: 1, row2: 3 })
+    useGameStore.getState().addSubmissionPair({ row1: 2, row2: 3 })
     useGameStore.getState().submitForVerdict()
     const { verdict, phase } = useGameStore.getState()
     expect(phase).toBe('trial')
@@ -75,7 +75,7 @@ describe('gameStore', () => {
 
   test('resetGame state i temizler', () => {
     useGameStore.getState().loadCase(tutorialCase)
-    useGameStore.getState().addPair({ row1: 1, row2: 3 })
+    useGameStore.getState().addSubmissionPair({ row1: 1, row2: 3 })
     useGameStore.getState().resetGame()
     const state = useGameStore.getState()
     expect(state.caseFile).toBeNull()

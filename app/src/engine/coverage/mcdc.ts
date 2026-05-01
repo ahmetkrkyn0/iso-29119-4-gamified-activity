@@ -89,7 +89,7 @@ type CoverageResult = {
   invalidPairs: IndependencePair[]
 }
 
-export function validateMcdcCoverage(
+function _validateMcdcCoverageCore(
   submission: McdcSubmission,
   truthTable: TruthTableRow[],
   conditions: Array<{ id: string }>,
@@ -129,4 +129,80 @@ export function validateMcdcCoverage(
     validPairs,
     invalidPairs,
   }
+}
+
+// ── B-UI compat exports ──────────────────────────────────────────────────────
+
+export type McRow = { id: number; A: boolean; B: boolean; C: boolean; D: boolean }
+
+const _altConds = [
+  { id: 'A', label: 'verticalSpeed > LIMIT' },
+  { id: 'B', label: 'autopilotEngaged' },
+  { id: 'C', label: 'pilotOverride' },
+]
+
+export const TRUTH_TABLE: McRow[] = generateTruthTable(_altConds, 'A && (B || C)').map((row) => ({
+  id: row.index,
+  A: row.values['A'] ?? false,
+  B: row.values['B'] ?? false,
+  C: row.values['C'] ?? false,
+  D: row.decision,
+}))
+
+export function isValidIndependencePair(
+  row1Id: number,
+  row2Id: number,
+  condition: string,
+): boolean {
+  const row1 = TRUTH_TABLE.find((r) => r.id === row1Id)
+  const row2 = TRUTH_TABLE.find((r) => r.id === row2Id)
+  if (!row1 || !row2) return false
+
+  const condKeys = ['A', 'B', 'C'] as const
+  const changed = condKeys.filter((c) => row1[c] !== row2[c])
+  const decisionFlipped = row1.D !== row2.D
+
+  return changed.length === 1 && changed[0] === condition && decisionFlipped
+}
+
+type McdcBPair = { condition: string; row1: number; row2: number }
+type BCoverageResult = {
+  coverageAchieved: boolean
+  coveragePercent: number
+  conditionsCovered: string[]
+}
+
+export function validateMcdcCoverage(
+  input: { selectedRows: number[]; independencePairs: McdcBPair[] },
+): BCoverageResult
+export function validateMcdcCoverage(
+  submission: McdcSubmission,
+  truthTable: TruthTableRow[],
+  conditions: Array<{ id: string }>,
+): CoverageResult
+export function validateMcdcCoverage(
+  submissionOrInput: McdcSubmission | { selectedRows: number[]; independencePairs: McdcBPair[] },
+  truthTable?: TruthTableRow[],
+  conditions?: Array<{ id: string }>,
+): CoverageResult | BCoverageResult {
+  if (!Array.isArray(submissionOrInput)) {
+    const { independencePairs } = submissionOrInput
+    const allConditions = ['A', 'B', 'C']
+    const covered = new Set<string>()
+
+    for (const pair of independencePairs) {
+      if (isValidIndependencePair(pair.row1, pair.row2, pair.condition)) {
+        covered.add(pair.condition)
+      }
+    }
+
+    const conditionsCovered = [...covered]
+    return {
+      coverageAchieved: conditionsCovered.length === allConditions.length,
+      coveragePercent: Math.round((conditionsCovered.length / allConditions.length) * 100),
+      conditionsCovered,
+    }
+  }
+
+  return _validateMcdcCoverageCore(submissionOrInput, truthTable!, conditions!)
 }
