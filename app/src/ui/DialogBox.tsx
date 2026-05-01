@@ -15,6 +15,7 @@ export default function DialogBox({ speaker, text, portrait, onNext, isLast }: P
   const [done, setDone] = useState(false)
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDisplayed('')
     setDone(false)
     let i = 0

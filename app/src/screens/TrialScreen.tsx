@@ -36,7 +36,7 @@ export default function TrialScreen({ onNavigate, onBack }: Props) {
       }, 2000)
       return () => clearTimeout(t)
     }
-  }, [phase])
+  }, [phase]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const { verdictResult, faultResults, misconceptions } = mcdc
   const isGuilty = verdictResult?.coverageAchieved && faultResults.every(f => f.detected)
