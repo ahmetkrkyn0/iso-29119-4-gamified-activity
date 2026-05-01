@@ -1,9 +1,49 @@
+import GraphPaperBg from './ui/GraphPaperBg'
+import { useGameStore } from './stores/gameStore'
+
+import MainMenuScreen      from './screens/MainMenuScreen'
+import CampaignMapScreen   from './screens/CampaignMapScreen'
+import BriefingScreen      from './screens/BriefingScreen'
+import InvestigationScreen from './screens/InvestigationScreen'
+import EvidenceScreen      from './screens/EvidenceScreen'
+import TrialScreen         from './screens/TrialScreen'
+import DebriefScreen       from './screens/DebriefScreen'
+import DesignSystemScreen  from './screens/DesignSystemScreen'
+import HowToPlayScreen     from './screens/HowToPlayScreen'
+
 export default function App() {
+  const { screen, navigate, goBack, completedCases } = useGameStore()
+
+  const renderScreen = () => {
+    const props = { onNavigate: navigate, onBack: goBack }
+    switch (screen) {
+      case 'menu':
+        return <MainMenuScreen onNavigate={navigate} />
+      case 'campaign':
+        return <CampaignMapScreen {...props} completedCases={completedCases} />
+      case 'briefing':
+        return <BriefingScreen {...props} />
+      case 'investigation':
+        return <InvestigationScreen {...props} />
+      case 'evidence':
+        return <EvidenceScreen {...props} />
+      case 'trial':
+        return <TrialScreen {...props} />
+      case 'debrief':
+        return <DebriefScreen {...props} />
+      case 'design-system':
+        return <DesignSystemScreen onBack={goBack} />
+      case 'how-to-play':
+        return <HowToPlayScreen onBack={goBack} />
+      default:
+        return <MainMenuScreen onNavigate={navigate} />
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-      <h1 className="text-3xl font-bold text-gray-800">
-        Test Courthouse — coming soon
-      </h1>
+    <div style={{ minHeight: '100vh' }}>
+      <GraphPaperBg />
+      {renderScreen()}
     </div>
   )
 }

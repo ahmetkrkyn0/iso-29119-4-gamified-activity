@@ -1,3 +1,44 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  background: #ffffff;
+}
+
+body {
+  font-family: 'Caveat', cursive;
+  color: #1A1A1A;
+  overflow-x: hidden;
+}
+
+button {
+  font-family: inherit;
+}
+
+::selection {
+  background: #C1358440;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes gavel {
+  0%   { transform: rotate(0deg); }
+  50%  { transform: rotate(-30deg); }
+  100% { transform: rotate(0deg); }
+}
