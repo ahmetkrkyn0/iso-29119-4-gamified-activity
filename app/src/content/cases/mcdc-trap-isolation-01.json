@@ -1,0 +1,30 @@
+{
+  "id": "mcdc-trap-isolation-01",
+  "act": "MCDC",
+  "difficulty": 3,
+  "iso_clauses": ["§5.3.6", "§5.3.6.2", "Annex C.2.3.6"],
+  "scenario": {
+    "title": "Emergency Override",
+    "narrative": "An emergency system triggers when alarm A fires, or when both backup sensor B and manual override C are active.",
+    "code": "if (alarmA || (backupSensor && manualOverride)) trigger();",
+    "conditions": [
+      { "id": "A", "label": "alarmA" },
+      { "id": "B", "label": "backupSensor" },
+      { "id": "C", "label": "manualOverride" }
+    ],
+    "decision_expression": "A || (B && C)"
+  },
+  "seeded_faults": [
+    {
+      "id": "F1",
+      "description": "Manual override C is ignored when backup sensor B is inactive",
+      "trigger": { "condition": "C", "requiredDecisionFlip": true }
+    }
+  ],
+  "misconceptions": [
+    {
+      "id": "MCDC-INDEP-AS-ISOLATION",
+      "explanation_md": "For `A || (B && C)`, testing each condition alone in isolation may not produce a valid independence pair because the decision may not flip. You need pairs where exactly one condition changes AND the decision flips."
+    }
+  ]
+}

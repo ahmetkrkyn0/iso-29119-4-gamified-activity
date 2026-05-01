@@ -1,0 +1,29 @@
+{
+  "id": "mcdc-tutorial-01",
+  "act": "MCDC",
+  "difficulty": 1,
+  "iso_clauses": ["§5.3.6", "§3.36"],
+  "scenario": {
+    "title": "Simple Safety Gate",
+    "narrative": "A safety system activates when sensor A is triggered AND button B is pressed.",
+    "code": "if (sensorTriggered && buttonPressed) activate();",
+    "conditions": [
+      { "id": "A", "label": "sensorTriggered" },
+      { "id": "B", "label": "buttonPressed" }
+    ],
+    "decision_expression": "A && B"
+  },
+  "seeded_faults": [
+    {
+      "id": "F1",
+      "description": "Button B check is bypassed when sensor A is triggered",
+      "trigger": { "condition": "B", "requiredDecisionFlip": true }
+    }
+  ],
+  "misconceptions": [
+    {
+      "id": "MCDC-INDEP-AS-ISOLATION",
+      "explanation_md": "You tested each condition in isolation. MCDC requires *paired* test cases where one condition changes while all others remain fixed and the decision outcome flips."
+    }
+  ]
+}

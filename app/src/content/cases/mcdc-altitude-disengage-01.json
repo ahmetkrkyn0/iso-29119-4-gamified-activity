@@ -1,7 +1,7 @@
 {
   "id": "mcdc-altitude-disengage-01",
   "act": "MCDC",
-  "difficulty": 1,
+  "difficulty": 2,
   "iso_clauses": ["§5.3.6", "§3.36", "Annex C.2.3.6"],
   "scenario": {
     "title": "Altitude Hold Disengage",
@@ -17,7 +17,8 @@
   "seeded_faults": [
     {
       "id": "F1",
-      "description": "Short-circuit evaluation skips C when B is true"
+      "description": "Short-circuit evaluation skips C when B is true",
+      "trigger": { "condition": "C", "requiredDecisionFlip": true }
     }
   ],
   "misconceptions": [

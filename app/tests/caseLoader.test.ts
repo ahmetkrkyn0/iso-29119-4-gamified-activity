@@ -23,4 +23,13 @@ describe('CaseFile schema', () => {
       expect(actIssue).toBeDefined()
     }
   })
+
+  test('seeded_fault trigger alanı zorunludur', () => {
+    const faultWithoutTrigger = {
+      ...validCase,
+      seeded_faults: [{ id: 'F1', description: 'test' }],
+    }
+    const result = CaseFileSchema.safeParse(faultWithoutTrigger)
+    expect(result.success).toBe(false)
+  })
 })
