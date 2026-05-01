@@ -5,9 +5,15 @@ const ConditionSchema = z.object({
   label: z.string(),
 })
 
+const FaultTriggerSchema = z.object({
+  condition: z.string(),
+  requiredDecisionFlip: z.boolean(),
+})
+
 const SeededFaultSchema = z.object({
   id: z.string(),
   description: z.string(),
+  trigger: FaultTriggerSchema,
 })
 
 const MisconceptionSchema = z.object({

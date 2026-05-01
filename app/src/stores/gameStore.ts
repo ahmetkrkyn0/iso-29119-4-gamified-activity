@@ -1,112 +1,78 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
-import type { IndependencePair, McdcResult } from '../engine/coverage/mcdc'
-import type { FaultResult } from '../engine/faults/simulator'
-import type { MisconceptionResult } from '../engine/misconceptions/detector'
-
-export type Screen =
-  | 'menu'
-  | 'campaign'
-  | 'multiplayer'
-  | 'achievements'
-  | 'design-system'
-  | 'how-to-play'
-  | 'briefing'
-  | 'investigation'
-  | 'evidence'
-  | 'trial'
-  | 'debrief'
-
-export interface McdcSessionState {
-  selectedRows: number[]
-  independencePairs: IndependencePair[]
-  verdictResult: McdcResult | null
-  faultResults: FaultResult[]
-  misconceptions: MisconceptionResult[]
-}
+import type { CaseFile } from '../engine/caseLoader'
+import type {
+  TruthTableRow,
+  IndependencePair,
+  McdcSubmission,
+  VerdictResult,
+  GamePhase,
+} from '../engine/types'
+import { generateTruthTable } from '../engine/coverage/mcdc'
+import { computeVerdict } from '../engine/verdict/index'
 
 interface GameState {
-  screen: Screen
-  history: Screen[]
-  completedCases: string[]
-  triggeredMisconceptions: string[]
-
-  // Current MCDC session
-  mcdc: McdcSessionState
-
-  // Navigation
-  navigate: (target: Screen) => void
-  goBack: () => void
-
-  // MCDC actions
-  toggleRow: (id: number) => void
+  phase: GamePhase
+  caseFile: CaseFile | null
+  truthTable: TruthTableRow[]
+  submission: McdcSubmission
+  verdict: VerdictResult | null
+  loadCase: (caseData: CaseFile) => void
   addPair: (pair: IndependencePair) => void
-  clearPairs: () => void
-  setVerdict: (result: McdcResult, faults: FaultResult[], misconceptions: MisconceptionResult[]) => void
-  resetMcdc: () => void
+  removePair: (row1: number, row2: number) => void
+  submitForVerdict: () => void
+  advancePhase: () => void
+  resetGame: () => void
 }
 
-const defaultMcdc: McdcSessionState = {
-  selectedRows: [],
-  independencePairs: [],
-  verdictResult: null,
-  faultResults: [],
-  misconceptions: [],
-}
+const PHASES: GamePhase[] = ['briefing', 'investigation', 'evidence', 'trial', 'debrief']
 
-export const useGameStore = create<GameState>()(
-  persist(
-    (set, get) => ({
-      screen: 'menu',
-      history: [],
-      completedCases: [],
-      triggeredMisconceptions: [],
-      mcdc: defaultMcdc,
+export const useGameStore = create<GameState>((set, get) => ({
+  phase: 'briefing',
+  caseFile: null,
+  truthTable: [],
+  submission: [],
+  verdict: null,
 
-      navigate(target) {
-        set(s => ({ screen: target, history: [...s.history, s.screen] }))
-      },
+  loadCase: (caseData) => {
+    const truthTable = generateTruthTable(
+      caseData.scenario.conditions,
+      caseData.scenario.decision_expression,
+    )
+    set({ caseFile: caseData, truthTable, phase: 'briefing', submission: [], verdict: null })
+  },
 
-      goBack() {
-        const { history } = get()
-        const prev: Screen = history.length > 0 ? history[history.length - 1]! : 'menu'
-        set(s => ({ screen: prev, history: s.history.slice(0, -1) }))
-      },
+  addPair: (pair) => {
+    set((state) => ({ submission: [...state.submission, pair] }))
+  },
 
-      toggleRow(id) {
-        set(s => ({
-          mcdc: {
-            ...s.mcdc,
-            selectedRows: s.mcdc.selectedRows.includes(id)
-              ? s.mcdc.selectedRows.filter(r => r !== id)
-              : [...s.mcdc.selectedRows, id],
-          },
-        }))
-      },
+  removePair: (row1, row2) => {
+    set((state) => ({
+      submission: state.submission.filter(
+        (p) =>
+          !(
+            (p.row1 === row1 && p.row2 === row2) ||
+            (p.row1 === row2 && p.row2 === row1)
+          ),
+      ),
+    }))
+  },
 
-      addPair(pair) {
-        set(s => ({ mcdc: { ...s.mcdc, independencePairs: [...s.mcdc.independencePairs, pair] } }))
-      },
+  submitForVerdict: () => {
+    const { submission, truthTable, caseFile } = get()
+    if (!caseFile) return
+    const verdict = computeVerdict(submission, truthTable, caseFile)
+    set({ verdict, phase: 'trial' })
+  },
 
-      clearPairs() {
-        set(s => ({ mcdc: { ...s.mcdc, independencePairs: [] } }))
-      },
+  advancePhase: () => {
+    set((state) => {
+      const current = PHASES.indexOf(state.phase)
+      const next = PHASES[current + 1] ?? state.phase
+      return { phase: next }
+    })
+  },
 
-      setVerdict(result, faults, misconceptions) {
-        const triggered = misconceptions.filter(m => m.triggered).map(m => m.id)
-        set(s => ({
-          mcdc: { ...s.mcdc, verdictResult: result, faultResults: faults, misconceptions },
-          triggeredMisconceptions: [...new Set([...s.triggeredMisconceptions, ...triggered])],
-          completedCases: result.coverageAchieved
-            ? [...new Set([...s.completedCases, 'mcdc-altitude-disengage-01'])]
-            : s.completedCases,
-        }))
-      },
-
-      resetMcdc() {
-        set({ mcdc: defaultMcdc })
-      },
-    }),
-    { name: 'test-courthouse-save' },
-  ),
-)
+  resetGame: () => {
+    set({ phase: 'briefing', caseFile: null, truthTable: [], submission: [], verdict: null })
+  },
+}))

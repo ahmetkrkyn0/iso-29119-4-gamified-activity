@@ -1,27 +1,42 @@
-import type { McdcSubmission } from '../coverage/mcdc'
-import { isValidIndependencePair, TRUTH_TABLE } from '../coverage/mcdc'
+import type { McdcSubmission, TruthTableRow } from '../types'
+import type { CaseFile } from '../caseLoader'
 
-export interface FaultResult {
-  id: string
-  detected: boolean
+type FaultSimulationResult = {
+  detected: string[]
+  missed: string[]
 }
 
-/**
- * F1: Short-circuit evaluation skips C when B is true.
- * Detected when the test suite contains a valid independence pair for condition C
- * in a context where B=false (so C cannot be short-circuited by B).
- * The only such pair from our 5-row table is (3, 4): A=T, B=F, C flips, D flips.
- */
-function detectF1(submission: McdcSubmission): boolean {
-  return submission.independencePairs.some(p => {
-    if (!isValidIndependencePair(p.row1, p.row2, 'C')) return false
-    const r1 = TRUTH_TABLE.find(r => r.id === p.row1)
-    const r2 = TRUTH_TABLE.find(r => r.id === p.row2)
-    // Both rows must have B=false so the short-circuit fault would be exercised
-    return r1 && r2 && !r1.B && !r2.B
-  })
-}
+export function simulateFaults(
+  submission: McdcSubmission,
+  truthTable: TruthTableRow[],
+  caseFile: CaseFile,
+): FaultSimulationResult {
+  const detected: string[] = []
+  const missed: string[] = []
+  const conditionIds = caseFile.scenario.conditions.map((c) => c.id)
 
-export function simulateFaults(submission: McdcSubmission): FaultResult[] {
-  return [{ id: 'F1', detected: detectF1(submission) }]
+  for (const fault of caseFile.seeded_faults) {
+    const { condition, requiredDecisionFlip } = fault.trigger
+
+    const faultCaught = submission.some((pair) => {
+      const row1 = truthTable[pair.row1]
+      const row2 = truthTable[pair.row2]
+      if (!row1 || !row2) return false
+
+      const changedConditions = conditionIds.filter((id) => row1.values[id] !== row2.values[id])
+      const testsTargetCondition =
+        changedConditions.length === 1 && changedConditions[0] === condition
+      const decisionFlipped = row1.decision !== row2.decision
+
+      return testsTargetCondition && (!requiredDecisionFlip || decisionFlipped)
+    })
+
+    if (faultCaught) {
+      detected.push(fault.id)
+    } else {
+      missed.push(fault.id)
+    }
+  }
+
+  return { detected, missed }
 }

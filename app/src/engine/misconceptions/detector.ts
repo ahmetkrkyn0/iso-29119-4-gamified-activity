@@ -1,32 +1,32 @@
-import type { McdcSubmission } from '../coverage/mcdc'
-import { isValidIndependencePair } from '../coverage/mcdc'
+import type { McdcSubmission, TruthTableRow } from '../types'
 
-export interface MisconceptionResult {
-  id: string
-  triggered: boolean
-  explanation: string
-}
+export function detectMisconceptions(
+  submission: McdcSubmission,
+  truthTable: TruthTableRow[],
+): string[] {
+  const triggered: string[] = []
 
-/**
- * MCDC-INDEP-AS-ISOLATION
- * Triggered when the player submits pairs where more than one condition changes
- * between rows (i.e. not a true independence pair).
- */
-function detectIndepAsIsolation(submission: McdcSubmission): boolean {
-  return submission.independencePairs.some(p => {
-    const cond = p.condition as 'A' | 'B' | 'C'
-    return !isValidIndependencePair(p.row1, p.row2, cond)
+  const hasIsolationPattern = submission.some((pair) => {
+    const row1 = truthTable[pair.row1]
+    const row2 = truthTable[pair.row2]
+    if (!row1 || !row2) return false
+
+    const changedCount = Object.keys(row1.values).filter(
+      (id) => row1.values[id] !== row2.values[id],
+    ).length
+    const decisionFlipped = row1.decision !== row2.decision
+
+    return changedCount !== 1 || !decisionFlipped
   })
-}
 
-export function detectMisconceptions(submission: McdcSubmission): MisconceptionResult[] {
-  return [
-    {
-      id: 'MCDC-INDEP-AS-ISOLATION',
-      triggered: detectIndepAsIsolation(submission),
-      explanation:
-        'You tested each condition in isolation, but ISO §5.3.6.2 requires *paired* test cases ' +
-        'where one condition changes while all others remain fixed and the decision outcome flips.',
-    },
-  ]
+  if (hasIsolationPattern) triggered.push('MCDC-INDEP-AS-ISOLATION')
+
+  const pairKeys = submission.map((p) =>
+    [Math.min(p.row1, p.row2), Math.max(p.row1, p.row2)].join('-'),
+  )
+  const hasDuplicate = pairKeys.length !== new Set(pairKeys).size
+
+  if (hasDuplicate) triggered.push('MCDC-DUPLICATE-PAIR')
+
+  return triggered
 }
